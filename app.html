@@ -721,10 +721,7 @@ function navigateTo(areaId) {
   else if (areaId === "familias" && (admin || almox.familias)) {
     el.innerHTML = renderFamiliasPage(); attachFamiliasPageEvents();
   }
-  else if (areaId === "pcm") {
-    el.innerHTML = window.renderPcmPage ? window.renderPcmPage() : renderPlaceholder("PCM", "clipboard", "Planejamento e Controle de Manutenção.");
-    if (window.attachPcmPageEvents) window.attachPcmPageEvents();
-  }
+  else if (areaId === "pcm") el.innerHTML = renderPlaceholder("PCM", "clipboard", "Planejamento e Controle de Manutenção: ordens de serviço, planos preventivos e indicadores.");
   else if (areaId === "utilidades") { el.innerHTML = renderUtilitiesPage(STATE.currentUser); attachUtilitiesEvents(); }
   else if (areaId === "treinamentos" && (perms.training || admin)) { el.innerHTML = renderTrainingArea(STATE.currentUser, admin); attachTrainingAreaEvents(STATE.currentUser, admin); }
   else if (areaId === "admin" && admin) { el.innerHTML = renderAdmin(); attachAdminEvents(); }
@@ -1138,9 +1135,7 @@ function openFamilyForm(famId) {
 }
 
 function openFamilyDeleteConfirm(famId) {
-    const familyCatalog = (window.BIOTROP_MASTER_DATA && Array.isArray(window.BIOTROP_MASTER_DATA.sci_familia) && window.BIOTROP_MASTER_DATA.sci_familia.length) ? window.BIOTROP_MASTER_DATA.sci_familia.map(function (x) { return { id: x.item_key, nome: x.label, campos: (x.metadata && x.metadata.campos) || [] }; }) : FAMILIES;
-    const fam = familyCatalog.find(function (f) { return f.id === famId; });
-    if (!fam) { dynEl.innerHTML = ""; commonEl.style.display = "none"; return; }
+  const fam = FAMILIES.find(function (f) { return f.id === famId; });
   const modalRoot = document.getElementById("familias-modal-root");
   modalRoot.innerHTML = `
   <div class="modal-backdrop" id="fam-delete-modal-backdrop">
@@ -1246,8 +1241,7 @@ function renderAlmoxTabContent() {
 
 // ---- Formulário SCI ----
 function renderSciForm() {
-  const familyCatalog = (window.BIOTROP_MASTER_DATA && Array.isArray(window.BIOTROP_MASTER_DATA.sci_familia) && window.BIOTROP_MASTER_DATA.sci_familia.length) ? window.BIOTROP_MASTER_DATA.sci_familia.map(function (x) { return { id: x.item_key, nome: x.label, campos: (x.metadata && x.metadata.campos) || [] }; }) : FAMILIES;
-  const options = familyCatalog.map(function (f) { return '<option value="' + f.id + '">' + esc(f.nome) + '</option>'; }).join("");
+  const options = FAMILIES.map(function (f) { return `<option value="${f.id}">${esc(f.nome)}</option>`; }).join("");
   return `
   <div class="sci-card">
     <label class="field-label">Tipo de material</label>
@@ -1663,13 +1657,10 @@ function bindScmRemoveButtons() {
 }
 
 function renderScmForm() {
-  const timeOptions = window.pcmOptionsHtml ? window.pcmOptionsHtml("scm_time", "Selecione...") : SCM_TIME_OPTIONS.map(function (t) { return '<option value="'+esc(t)+'">'+esc(t)+'</option>'; }).join("");
-  const cammOptions = window.pcmOptionsHtml ? window.pcmOptionsHtml("scm_camm", "Selecione...") : SCM_CAMM_OPTIONS.map(function (t) { return '<option value="'+esc(t)+'">'+esc(t)+'</option>'; }).join("");
-  const urgOptions = window.pcmOptionsHtml ? window.pcmOptionsHtml("scm_urgencia", "Selecione...") : SCM_URGENCIA_OPTIONS.map(function (t) { return '<option value="'+esc(t)+'">'+esc(t)+'</option>'; }).join("");
-  const centroCustoOptions = SCM_CENTRO_CUSTO_OPTIONS.map(function (t) { return '<option value="'+esc(t)+'">'+esc(t)+'</option>'; }).join("");
-  const tipoSolicitacaoOptions = window.pcmOptionsHtml ? window.pcmOptionsHtml("scm_tipo_solicitacao", "Selecione...") : '<option value="normal">Normal</option><option value="emergencial">Emergencial</option><option value="melhoria_capex">Melhoria/CAPEX</option>';
-  const tipoFornecedorOptions = window.pcmOptionsHtml ? window.pcmOptionsHtml("scm_tipo_fornecedor", "Selecione...") : '<option value="normal">Normal</option><option value="escolhido">Escolhido</option><option value="exclusivo">Exclusivo</option>';
-  const tipoPedidoOptions = window.pcmOptionsHtml ? window.pcmOptionsHtml("scm_tipo_pedido", "Selecione...") : '<option value="compra_material">Compra de Material</option><option value="contratacao_servico_pcm">Contratação de Serviço (PCM)</option><option value="solicitacao_manutencao_externa">Solicitação de Manutenção Externa</option>';
+  const timeOptions = SCM_TIME_OPTIONS.map(function (t) { return `<option value="${esc(t)}">${esc(t)}</option>`; }).join("");
+  const cammOptions = SCM_CAMM_OPTIONS.map(function (t) { return `<option value="${esc(t)}">${esc(t)}</option>`; }).join("");
+  const urgOptions = SCM_URGENCIA_OPTIONS.map(function (t) { return `<option value="${esc(t)}">${esc(t)}</option>`; }).join("");
+  const centroCustoOptions = SCM_CENTRO_CUSTO_OPTIONS.map(function (t) { return `<option value="${esc(t)}">${esc(t)}</option>`; }).join("");
 
   SCM_ITEM_COUNTER = 0;
   const firstItemHtml = scmItemRowHtml();
@@ -1685,7 +1676,9 @@ function renderScmForm() {
     <label class="field-label" style="margin-top:14px;">Tipo de Solicitação <span style="color:#d64545;">*</span></label>
     <div class="hint-box" style="margin:6px 0 8px;">Emergencial: usado para casos em que equipamento e produção estão parados e é necessária a peça imediatamente.</div>
     <select class="modal-input" id="scm-tipo-solicitacao">
-      ${tipoSolicitacaoOptions}
+      <option value="normal">Normal</option>
+      <option value="emergencial">Emergencial</option>
+      <option value="melhoria_capex">Melhoria/CAPEX</option>
     </select>
 
     <div id="scm-capex-block" style="display:none;">
@@ -1720,7 +1713,9 @@ function renderScmForm() {
     <label class="field-label" style="margin-top:14px;">Tipo de Fornecedor <span style="color:#d64545;">*</span></label>
     <div class="hint-box" style="margin:6px 0 8px;">"Normal" - qualquer fornecedor atende; "Escolhido" - mais de um fornecedor atende, porém um é escolhido; "Exclusivo" - apenas um fornecedor atende.</div>
     <select class="modal-input" id="scm-tipo-fornecedor">
-      ${tipoFornecedorOptions}
+      <option value="normal">Normal</option>
+      <option value="escolhido">Escolhido</option>
+      <option value="exclusivo">Exclusivo</option>
     </select>
 
     <div id="scm-fornecedor-block" style="display:none;">
@@ -1730,7 +1725,10 @@ function renderScmForm() {
 
     <label class="field-label" style="margin-top:14px;">Tipo de Pedido <span style="color:#d64545;">*</span></label>
     <select class="modal-input" id="scm-tipo-pedido">
-      ${tipoPedidoOptions}
+      <option value="">Selecione...</option>
+      <option value="compra_material">Compra de Material</option>
+      <option value="contratacao_servico_pcm">Contratação de Serviço (PCM)</option>
+      <option value="solicitacao_manutencao_externa">Solicitação de Manutenção Externa</option>
     </select>
 
     <label class="field-label" style="margin-top:14px;">Descrição de uso do material / Relatório Solicitação Serviço <span style="color:#d64545;">*</span></label>
@@ -1950,12 +1948,6 @@ function scmAnexosHtml(s) {
   return '<div class="sci-section-title">Anexos</div>' + imgs + linksHtml;
 }
 function scmLabel(field, value) {
-  const scopeMap = { tipoSolicitacao: "scm_tipo_solicitacao", tipoFornecedor: "scm_tipo_fornecedor", tipoPedido: "scm_tipo_pedido" };
-  const scope = scopeMap[field];
-  if (scope && window.BIOTROP_MASTER_DATA && Array.isArray(window.BIOTROP_MASTER_DATA[scope])) {
-    const found = window.BIOTROP_MASTER_DATA[scope].find(function (x) { return x.item_key === value; });
-    if (found) return found.label;
-  }
   const maps = {
     tipoSolicitacao: { normal: "Normal", emergencial: "Emergencial", melhoria_capex: "Melhoria/CAPEX" },
     tipoFornecedor: { normal: "Normal", escolhido: "Escolhido", exclusivo: "Exclusivo" },
@@ -2562,8 +2554,6 @@ async function hydrateBiosegSide(user,admin){const list=getTrainings().filter(t=
 function openBiosegSettings(){openV12Settings()}
 })();
 
-window.BIOTROP_STATE=STATE;
-window.BIOTROP_NAVIGATE=navigateTo;
 window.addEventListener('DOMContentLoaded',async()=>{try{if(!SB)throw new Error('Supabase não configurado. Revise config.js.');const r=await SB.auth.getSession();if(r.data.session){await enterAuthenticated(r.data.session)}else{STATE.screen='login';render()}}catch(e){STATE.screen='login';render();const box=document.getElementById('login-error-box');if(box)box.innerHTML='<div class="login-error">'+esc(e.message||'Falha de configuração ou conexão com o Supabase.')+'</div>'}});
 if(SB)SB.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){STATE.currentUser=null;STATE.screen='login';render()} });
 
@@ -2572,7 +2562,6 @@ if(SB)SB.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){STATE
 <script src="./assets/js/biotrop-production-v2.js"></script>
 <script src="./assets/js/user-management-v1.js"></script>
 <script src="./assets/js/technician-simple-mode-v1.js"></script>
-<script src="./pcm-admin.js"></script>
 
 
 
